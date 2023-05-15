@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:meals_app_flutter/data/dummy_data.dart';
 import 'package:meals_app_flutter/models/meal.dart';
 import 'package:meals_app_flutter/screens/categories.dart';
 import 'package:meals_app_flutter/screens/filters.dart';
 import 'package:meals_app_flutter/screens/meals.dart';
 import 'package:meals_app_flutter/widgets/main_drawer.dart';
+
+const kInitialFilters = {
+  Filter.glutenFree: false,
+  Filter.lactoseFree: false,
+  Filter.vegetarian: false,
+  Filter.vegan: false,
+};
 
 class TabsScreen extends StatefulWidget {
   const TabsScreen({super.key});
@@ -17,6 +25,7 @@ class TabsScreen extends StatefulWidget {
 class _TabsScreenState extends State<TabsScreen> {
   int _selectedPageIndex = 0;
   final List<Meal> _favoriteMeals = [];
+  Map<Filter, bool> _selectedFilter = kInitialFilters;
 
   void _showInfoMessage(String message) {
     ScaffoldMessenger.of(context).clearSnackBars();
@@ -55,17 +64,38 @@ class _TabsScreenState extends State<TabsScreen> {
     if (identifier == 'filters') {
       final result = await Navigator.of(context).push<Map<Filter, bool>>(
         MaterialPageRoute(
-          builder: (ctx) => const FiltersScreen(),
+          builder: (ctx) => FiltersScreen(
+            currentFilters: _selectedFilter,
+          ),
         ),
       );
-      print(result);
+      setState(() {
+        _selectedFilter = result ?? kInitialFilters;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final availableMeals = dummyMeals.where((meal) {
+      if (_selectedFilter[Filter.glutenFree]! && !meal.isGlutenFree) {
+        return false;
+      }
+      if (_selectedFilter[Filter.lactoseFree]! && !meal.isLactoseFree) {
+        return false;
+      }
+      if (_selectedFilter[Filter.vegetarian]! && !meal.isVegetarian) {
+        return false;
+      }
+      if (_selectedFilter[Filter.vegan]! && !meal.isVegan) {
+        return false;
+      }
+      return true;
+    }).toList();
+
     Widget activePage = CategoriesScreen(
       onToggleFavorite: _toogleMealFavoriteStatus,
+      availableMeals: availableMeals,
     );
     String activePageTitle = 'Categories';
 
